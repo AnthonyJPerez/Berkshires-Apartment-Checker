@@ -28,14 +28,13 @@ def getListings(a, date, apartmentType)
 	apartments = results.search('table > tbody > .OtherMatchedApartments, table > tbody > .ExactMatchedApartments').map do |tr|
 		# Extract the apartment listings as an array of strings
 		listings = tr.search('td').map do |td|
-	        # Print the results
 	        x = td.text.delete("\r\n,").strip
 	        x.gsub!(/(\s)+/, '\1')
 	        x.gsub!(/^\$(.*)-(.*)/, '$\1')
 	        x
 		end
 
-		# Remove unnecessary information
+		# Remove unnecessary information (removing index 3, 4)
 		listings = listings[0..2] << listings[5]
 
 		# Return an array of important information of each listing
@@ -63,7 +62,7 @@ end
 
 # Filter out our listings
 apartments.select! do |apt|
-	money = (1600 > apt[3].delete("$").to_i)		# Filter out apartments > $1600/mo
+	money = (1600 > apt[3].delete("$").to_i) # Filter out apartments > $1600/mo
 	begin
 		available = Date.strptime(apt[1], "%m/%d/%Y")
 	rescue
@@ -74,7 +73,8 @@ apartments.select! do |apt|
 end
 
 # Print the listings
-apartments.uniq!.each do |apt|
+apartments.uniq!.sort! { |a,b| a[3] <=> b[3] }
+apartments.each do |apt|
 	puts apt.join(", ")
 end
 
