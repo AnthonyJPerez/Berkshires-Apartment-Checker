@@ -78,19 +78,37 @@ M = Mechanize.new { |agent|
 apartments = []
 threads = []
 
+# Submit the form for each type of apartment. Use a 
+# thread for each form submission, to speed up the process.
 APT_TYPES.each do |apt_size_key, apt_size|
-	apartments += getListings(M, '01/03/2013', apt_size, LEASE_LENGTHS[:MONTH_7])
+	threads << Thread.new {
+		getListings(M, '01/03/2013', apt_size, LEASE_LENGTHS[:MONTH_7])
+	}
 end
 
-# Filter out our listings
+# Sync all of the threads
+threads.each do |t|
+	t.join
+end
+
+# Grab all of the data out of each thread push them all into one array
+threads.each do |t|
+	apartments += t.value
+end
+
+# Filter our listings
 apartments.select! do |apt|
-	money = (1600 > apt[3].delete("$").to_i) # Filter out apartments > $1600/mo
+	# Filter out apartments > $1800/mo
+	money = (1800 > apt[3].delete("$").to_i) 
 	begin
 		available = Date.strptime(apt[1], "%m/%d/%Y")
 	rescue
 		available = Date.strptime(Date.today.to_s, "%Y-%m-%d")
 	end
-	date = (available <=> MOVEIN_DATE - 45) >= 0 and (available <=> MOVEIN_DATE + 14) <= 1 # Filter out apts not within a month's window
+	# Filter out apts not availale within a month's window
+	date = (available <=> MOVEIN_DATE - 45) >= 0 and (available <=> MOVEIN_DATE + 14) <= 1
+
+	# Keep this item in the array if both evaluate to true
 	(money and date)
 end
 
