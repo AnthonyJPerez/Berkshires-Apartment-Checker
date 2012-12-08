@@ -3,16 +3,36 @@ require 'mechanize'
 require 'date'
 
 
-APT_TYPES = [
-	'Z000000001',	# 1/1
-	'Z000000002',	# 2/1
-	'Z000000005'	# 2/2
-]
+APT_TYPES = {
+	:_1B_1Ba => 'Z000000001',	# 1/1
+	:_2B_1Ba => 'Z000000002',	# 2/1
+	:_2B_2Ba => 'Z000000005'	# 2/2
+}
+
+LEASE_LENGTHS = {
+	:MONTH_1 => "12",
+	:MONTH_2 => "37",
+	:MONTH_3 => "14",
+	:MONTH_4 => "38",
+	:MONTH_5 => "39",
+	:MONTH_6 => "2",
+	:MONTH_7 => "3",
+	:MONTH_8 => "4",
+	:MONTH_9 => "5",
+	:MONTH_10 => "6",
+	:MONTH_11 => "7",
+	:MONTH_12 => "8",
+	:MONTH_13 => "9" 
+}
 
 MOVEIN_DATE = Date.new(2013, 1, 3)
 
 
-def getListings(a, date, apartmentType)
+## a == Mechanize library
+## date == desired Move-in Date
+## apartmentType == size of the apartment
+## leaseLength == length of the lease, in months
+def getListings(a, date, apartmentType, leaseLength)
 	# Grab the property search page
 	results = nil
 	a.get('http://property.onesite.realpage.com/ol/?s=1001107') do |page|
@@ -21,6 +41,7 @@ def getListings(a, date, apartmentType)
 	    	#puts search.inspect
 	        search['cfaSearchCriteria$cfaSearchCriteria$txtDateNeeded'] = date
 	        search['cfaSearchCriteria$cfaSearchCriteria$lstApartmentTypes'] = apartmentType
+	        search['cfaSearchCriteria$cfaSearchCriteria$lstLeaseTerms'] = leaseLength
 	    end.submit
 	end
 
@@ -55,9 +76,10 @@ M = Mechanize.new { |agent|
 
 
 apartments = []
+threads = []
 
-APT_TYPES.each do |apt_type|
-	apartments += getListings(M, '01/03/2013', apt_type)
+APT_TYPES.each do |apt_size_key, apt_size|
+	apartments += getListings(M, '01/03/2013', apt_size, LEASE_LENGTHS[:MONTH_7])
 end
 
 # Filter out our listings
