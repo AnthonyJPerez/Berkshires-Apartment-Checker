@@ -55,8 +55,10 @@ def getListings(a, date, apartmentType, leaseLength)
 	        x
 		end
 
+		eventTarget = tr.search('a')[0].to_s.split("'")[1].gsub('%24', '$')
+
 		# Remove unnecessary information (removing index 3, 4)
-		listings = listings[0..2] << listings[5]
+		listings = listings[0..2] << getListingPrice(results, leaseLength, eventTarget)
 
 		# Return an array of important information of each listing
 		# [Apt #, Date Available, Apt Type, Cost]
@@ -66,6 +68,23 @@ def getListings(a, date, apartmentType, leaseLength)
 	return apartments
 end
 
+
+
+def getListingPrice(oldPage, leaseLength, eventTarget)	
+	newPage = oldPage.form_with(:name => 'Form1') do |f|
+		f.__EVENTTARGET = eventTarget.to_s
+	end.submit
+
+	# choose rdoBestPrice with value == lease_length
+	newPage.search('.bestPriceLine').map do |bestPriceLine|
+		lease = LEASE_LENGTHS.key(leaseLength).to_s.gsub(/[a-zA-Z_:]/, '')
+		if bestPriceLine.at('.leaseTerm > strong').text.include? lease then
+			return bestPriceLine.at('.priceAmount').text.strip
+		end
+	end
+
+	"$0"
+end
 
 #######
 #######
